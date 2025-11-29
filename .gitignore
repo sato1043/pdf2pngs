@@ -312,3 +312,13 @@ build
 
 storybook-static
 /.claude/settings.local.json
+
+/src/generated/prisma
+
+# Prisma
+.env
+prisma/dev.db
+prisma/dev.db-journal
+
+# CLI test DB
+*.db
