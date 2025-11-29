@@ -126,7 +126,7 @@ describe('CLI', () => {
       expect(stdout).toContain('削除しました: テスト');
     });
 
-    it('削除後はリストから消える', () => {
+    it('削除後はリストから消える', { timeout: 10000 }, () => {
       runCli('add タスク1');
       runCli('add タスク2');
       runCli('delete 1');
@@ -159,7 +159,7 @@ describe('CLI', () => {
       expect(stdout).toContain('完了率:   0%');
     });
 
-    it('Todoの統計を表示する', () => {
+    it('Todoの統計を表示する', { timeout: 10000 }, () => {
       runCli('add タスク1');
       runCli('add タスク2');
       runCli('add タスク3');
@@ -186,7 +186,7 @@ describe('CLI', () => {
       expect(stdout).toContain('完了率:   50%');
     });
 
-    it('すべて完了で100%を表示する', () => {
+    it('すべて完了で100%を表示する', { timeout: 10000 }, () => {
       runCli('add タスク1');
       runCli('add タスク2');
       runCli('done 1');

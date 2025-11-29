@@ -50,6 +50,30 @@ Todo一覧:
 | `list`            | Todo一覧を表示       |
 | `done <number>`   | 指定番号のTodoを完了にする |
 | `delete <number>` | 指定番号のTodoを削除    |
+| `status`          | 統計を表示（完了率）     |
+| `export`          | マークダウン形式でエクスポート |
+| `search <query>`  | タイトル・タグで検索     |
+
+
+**統計・エクスポート使用例**
+
+```bash
+$ npm start -- status
+統計:
+  総数:     3
+  完了:     1
+  未完了:   2
+  完了率:   33%
+
+$ npm start -- export
+# Todo List
+
+> 完了率: 33% (1/3)
+
+- [x] 牛乳を買う _(2025/11/29)_
+- [ ] メールを送る _(2025/11/29)_
+- [ ] 掃除する _(2025/11/29)_
+```
 
 
 **タグ機能使用例**
@@ -100,6 +124,7 @@ $ npm start -- search 仕事
 **技術構成**
 
 - **TypeScript** - 型安全な JavaScript
+- **React Ink** - CLI向けReactレンダラー
 - **Vitest** - 高速なテストフレームワーク
 - **tsx** - TypeScript 直接実行ツール（esbuild ベース）
 - **ESModule** - ネイティブ ESM（`"type": "module"`）
@@ -113,13 +138,23 @@ $ npm start -- search 仕事
 .
 ├── src/
 │   ├── index.ts           # エントリーポイント
-│   ├── cli.ts             # CLI層
+│   ├── cli.tsx            # CLI層（React Ink）
 │   ├── db.ts              # DB層 (node:sqlite)
 │   ├── repository.ts      # リポジトリ層（抽象化）
+│   ├── components/        # React Ink コンポーネント
+│   │   ├── App.tsx        # メインアプリケーション
+│   │   ├── TodoList.tsx   # Todo一覧表示
+│   │   ├── Status.tsx     # 統計表示
+│   │   ├── Export.tsx     # マークダウンエクスポート
+│   │   ├── TagList.tsx    # タグ一覧表示
+│   │   ├── Message.tsx    # メッセージ表示
+│   │   ├── Usage.tsx      # ヘルプ表示
+│   │   └── index.tsx      # エクスポート
 │   ├── generated/prisma/  # Prisma Client（自動生成）
 │   └── __tests__/
 │       ├── cli.test.ts    # CLI層テスト
-│       └── db.test.ts     # DB層テスト
+│       ├── db.test.ts     # DB層テスト
+│       └── repository.test.ts  # リポジトリ層テスト
 ├── prisma/
 │   ├── schema.prisma      # Prismaスキーマ
 │   └── migrations/        # マイグレーション
@@ -241,6 +276,7 @@ dist/
 
 ```typescript
 interface TodoRepository {
+  // Todo CRUD
   create(data: TodoCreate): Promise<Todo>;
   findAll(): Promise<Todo[]>;
   findById(id: string): Promise<Todo | null>;
@@ -248,6 +284,19 @@ interface TodoRepository {
   delete(id: string): Promise<boolean>;
   reset(): Promise<void>;
   close(): Promise<void>;
+
+  // タグ操作
+  createTag(name: string): Promise<Tag>;
+  findAllTags(): Promise<Tag[]>;
+  findTagByName(name: string): Promise<Tag | null>;
+  deleteTag(id: string): Promise<boolean>;
+
+  // Todo-タグ関連
+  addTagToTodo(todoId: string, tagId: string): Promise<boolean>;
+  removeTagFromTodo(todoId: string, tagId: string): Promise<boolean>;
+  findTodoWithTags(id: string): Promise<TodoWithTags | null>;
+  findAllWithTags(): Promise<TodoWithTags[]>;
+  findByTag(tagName: string): Promise<TodoWithTags[]>;
 }
 ```
 
@@ -334,6 +383,46 @@ DATABASE_URL="file:./dev.db"
 ### 検索機能の拡張
 
 search コマンドがタイトルとタグの両方で検索できる
+
+
+## React Ink アーキテクチャ
+
+CLIはReact Inkで実装されており、Reactコンポーネントとしてターミナル出力をレンダリングします。
+
+### コンポーネント構成
+
+```
+App.tsx
+├── TodoList.tsx    # Todo一覧（タグ表示対応）
+├── Status.tsx      # 統計表示
+├── Export.tsx      # マークダウン出力
+├── TagList.tsx     # タグ一覧
+├── Message.tsx     # 成功/エラーメッセージ
+└── Usage.tsx       # ヘルプ表示
+```
+
+### 状態管理
+
+Appコンポーネントが全コマンドのルーティングと状態管理を担当：
+
+```typescript
+type AppState =
+  | { type: 'loading' }
+  | { type: 'usage'; showError?: string }
+  | { type: 'message'; messageType: 'success' | 'error' | 'info'; text: string }
+  | { type: 'todoList'; todos: Todo[]; title?: string }
+  | { type: 'status'; todos: Todo[] }
+  | { type: 'export'; todos: Todo[] }
+  | { type: 'tagList'; tags: Tag[] }
+  | { type: 'searchResults'; todos: TodoWithTags[]; query: string };
+```
+
+### メリット
+
+- **宣言的UI**: Reactの宣言的なアプローチでCLI出力を構築
+- **コンポーネント再利用**: 表示ロジックを再利用可能なコンポーネントに分離
+- **型安全**: TypeScriptとの親和性が高い
+- **テスタビリティ**: コンポーネント単位でのテストが容易
 
 
 __END__
