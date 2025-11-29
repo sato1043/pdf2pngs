@@ -23,6 +23,7 @@ export function Usage() {
       <Text bold>REPL commands:</Text>
       <Text>  help                  - このヘルプを表示</Text>
       <Text>  clear                 - 画面をクリア</Text>
+      <Text>  select                - ファイル選択ダイアログを開く</Text>
       <Text>  exit / quit / Ctrl+D×2 - 終了</Text>
       <Text>  !{'<shell command>'}      - シェルコマンドを実行</Text>
       <Text />
@@ -36,6 +37,7 @@ export function Usage() {
       <Text>  Ctrl+U                - 行を削除</Text>
       <Text>  Ctrl+K                - カーソル以降を削除</Text>
       <Text>  Ctrl+W                - 単語を削除</Text>
+      <Text>  Ctrl+O                - ファイル選択ダイアログを開く</Text>
     </Box>
   );
 }

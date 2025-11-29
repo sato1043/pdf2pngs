@@ -8,6 +8,7 @@ import { Export } from './Export.js';
 import { TagList } from './TagList.js';
 import { Message } from './Message.js';
 import { Usage } from './Usage.js';
+import { FileSelector } from './FileSelector.js';
 
 interface REPLAppProps {
   repo: TodoRepository;
@@ -35,6 +36,7 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [ctrlDPressed, setCtrlDPressed] = useState(false); // Ctrl+D 2回押し検出用
+  const [fileSelectMode, setFileSelectMode] = useState(false); // ファイル選択モード
 
   // Ctrl+D 2回押しのタイムアウト（1秒で解除、メッセージも消去）
   const ctrlDMessage = '終了するには１秒以内に Ctrl+D を２回押してください';
@@ -63,6 +65,7 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
   // コマンド履歴ナビゲーション & 特殊キー処理
   useInput(async (ch, key) => {
     if (isProcessing) return;
+    if (fileSelectMode) return; // ファイル選択モード中は通常入力を無視
 
     // Ctrl+C でヒントを表示
     if (ch === 'c' && key.ctrl) {
@@ -148,6 +151,14 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
       setCursorPos(0);
       return;
     }
+    // Ctrl+O でファイル選択モードを開始
+    if (ch === 'o' && key.ctrl) {
+      setInput('');
+      setCursorPos(0);
+      setFileSelectMode(true);
+      return;
+    }
+
     // 通常文字入力: カーソル位置に挿入
     if (!key.ctrl && !key.meta && ch && !key.upArrow && !key.downArrow && !key.leftArrow && !key.rightArrow) {
       const newInput = input.slice(0, cursorPos) + ch + input.slice(cursorPos);
@@ -185,6 +196,16 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
 
   const addToHistory = useCallback((item: OutputItem) => {
     setHistory(prev => [...prev, item]);
+  }, []);
+
+  // ファイル選択ハンドラ
+  const handleFileSelect = useCallback((filePath: string) => {
+    setFileSelectMode(false);
+    addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
+  }, [addToHistory]);
+
+  const handleFileSelectCancel = useCallback(() => {
+    setFileSelectMode(false);
   }, []);
 
   const executeCommand = useCallback(async (commandLine: string) => {
@@ -232,6 +253,12 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
     // clear コマンド
     if (command === 'clear') {
       setHistory([]);
+      return;
+    }
+
+    // select コマンド（ファイル選択）
+    if (command === 'select') {
+      setFileSelectMode(true);
       return;
     }
 
@@ -534,6 +561,27 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
         return null;
     }
   };
+
+  // ファイル選択モード
+  if (fileSelectMode) {
+    return (
+      <Box flexDirection="column">
+        {/* ヘッダー */}
+        <Box marginBottom={1}>
+          <Text bold color="cyan">Todo CLI</Text>
+          <Text color="gray"> - Type 'help' for commands, 'exit' to quit</Text>
+        </Box>
+
+        {/* 出力履歴 */}
+        <Box flexDirection="column" marginBottom={1}>
+          {history.map((item, index) => renderOutputItem(item, index))}
+        </Box>
+
+        {/* ファイルセレクター */}
+        <FileSelector onSelect={handleFileSelect} onCancel={handleFileSelectCancel} />
+      </Box>
+    );
+  }
 
   return (
     <Box flexDirection="column">
