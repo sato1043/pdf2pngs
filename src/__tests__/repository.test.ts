@@ -148,6 +148,101 @@ function testRepository(
         expect(todos).toEqual([]);
       });
     });
+
+    describe('tags', () => {
+      it('タグを作成できる', async () => {
+        const tag = await repo.createTag('仕事');
+        expect(tag.id).toBeDefined();
+        expect(tag.name).toBe('仕事');
+      });
+
+      it('タグ一覧を取得できる', async () => {
+        await repo.createTag('仕事');
+        await repo.createTag('プライベート');
+        const tags = await repo.findAllTags();
+        expect(tags).toHaveLength(2);
+        expect(tags.map((t) => t.name)).toContain('仕事');
+        expect(tags.map((t) => t.name)).toContain('プライベート');
+      });
+
+      it('タグ名で検索できる', async () => {
+        await repo.createTag('仕事');
+        const found = await repo.findTagByName('仕事');
+        expect(found).not.toBeNull();
+        expect(found?.name).toBe('仕事');
+      });
+
+      it('存在しないタグ名の場合はnullを返す', async () => {
+        const found = await repo.findTagByName('存在しない');
+        expect(found).toBeNull();
+      });
+
+      it('タグを削除できる', async () => {
+        const tag = await repo.createTag('仕事');
+        const deleted = await repo.deleteTag(tag.id);
+        expect(deleted).toBe(true);
+        const found = await repo.findTagByName('仕事');
+        expect(found).toBeNull();
+      });
+    });
+
+    describe('todo-tag relation', () => {
+      it('Todoにタグをつけられる', async () => {
+        const todo = await repo.create({ title: 'タスク' });
+        const tag = await repo.createTag('仕事');
+        const result = await repo.addTagToTodo(todo.id, tag.id);
+        expect(result).toBe(true);
+      });
+
+      it('Todoからタグを取得できる', async () => {
+        const todo = await repo.create({ title: 'タスク' });
+        const tag = await repo.createTag('仕事');
+        await repo.addTagToTodo(todo.id, tag.id);
+        const todoWithTags = await repo.findTodoWithTags(todo.id);
+        expect(todoWithTags?.tags).toHaveLength(1);
+        expect(todoWithTags?.tags[0].name).toBe('仕事');
+      });
+
+      it('Todoに複数のタグをつけられる', async () => {
+        const todo = await repo.create({ title: 'タスク' });
+        const tag1 = await repo.createTag('仕事');
+        const tag2 = await repo.createTag('緊急');
+        await repo.addTagToTodo(todo.id, tag1.id);
+        await repo.addTagToTodo(todo.id, tag2.id);
+        const todoWithTags = await repo.findTodoWithTags(todo.id);
+        expect(todoWithTags?.tags).toHaveLength(2);
+      });
+
+      it('Todoからタグを外せる', async () => {
+        const todo = await repo.create({ title: 'タスク' });
+        const tag = await repo.createTag('仕事');
+        await repo.addTagToTodo(todo.id, tag.id);
+        await repo.removeTagFromTodo(todo.id, tag.id);
+        const todoWithTags = await repo.findTodoWithTags(todo.id);
+        expect(todoWithTags?.tags).toHaveLength(0);
+      });
+
+      it('タグ付きで全件取得できる', async () => {
+        const todo1 = await repo.create({ title: 'タスク1' });
+        const todo2 = await repo.create({ title: 'タスク2' });
+        const tag = await repo.createTag('仕事');
+        await repo.addTagToTodo(todo1.id, tag.id);
+        const todos = await repo.findAllWithTags();
+        expect(todos).toHaveLength(2);
+        expect(todos[0].tags).toHaveLength(1);
+        expect(todos[1].tags).toHaveLength(0);
+      });
+
+      it('タグでTodoを検索できる', async () => {
+        const todo1 = await repo.create({ title: 'タスク1' });
+        const todo2 = await repo.create({ title: 'タスク2' });
+        const tag = await repo.createTag('仕事');
+        await repo.addTagToTodo(todo1.id, tag.id);
+        const results = await repo.findByTag('仕事');
+        expect(results).toHaveLength(1);
+        expect(results[0].title).toBe('タスク1');
+      });
+    });
   });
 }
 

@@ -7,7 +7,9 @@ TypeScript + Vitest のサンプルプロジェクト
 - **Node.js** >= 22.5.0
 
 
-## 実行例
+## 使用例
+
+**Todo機能使用例**
 
 ```bash
 
@@ -42,20 +44,47 @@ Todo一覧:
 
 ```
 
-
-## コマンド
-
-| コマンド                           | 説明              |
-|--------------------------------|-----------------|
-| `npm start -- add <title>`     | Todoを追加         |
-| `npm start -- list`            | Todo一覧を表示       |
-| `npm start -- done <number>`   | 指定番号のTodoを完了にする |
-| `npm start -- delete <number>` | 指定番号のTodoを削除    |
+| Todoコマンド          | 説明              |
+|-------------------|-----------------|
+| `add <title>`     | Todoを追加         |
+| `list`            | Todo一覧を表示       |
+| `done <number>`   | 指定番号のTodoを完了にする |
+| `delete <number>` | 指定番号のTodoを削除    |
 
 
-## npmスクリプト
+**タグ機能使用例**
 
-| コマンド                 | 説明                               |
+```bash
+
+$ npm start -- tag add 仕事
+タグを作成しました: 仕事
+
+$ npm start -- tag set 1 仕事,緊急
+タグを設定しました: 仕事, 緊急 → タスク1
+
+$ npm start -- tag show 仕事
+タグ "仕事" のTodo (1件):
+1. [ ] タスク1 [仕事, 緊急] (2025/11/29)
+
+$ npm start -- search 仕事
+検索結果 (1件):
+1. [ ] タスク1 [仕事, 緊急] (2025/11/29)
+
+```
+
+| タグコマンド                | 説明                 |
+|-----------------------|--------------------|
+| tag list              | タグ一覧を表示            |
+| tag add <name>        | タグを作成              |
+| tag delete <name>     | タグを削除              |
+| tag set <num> <tags>  | Todoにタグを設定（カンマ区切り） |
+| tag unset <num> <tag> | Todoからタグを解除        |
+| tag show <name>       | タグでTodoを絞り込み       |
+
+
+## 構成
+
+| npmスクリプト             | 説明                               |
 |----------------------|----------------------------------|
 | `npm run start`      | tsxランタイムで実行                      |
 | `npm run dev`        | デバッガ接続可能モードで実行                   |
@@ -68,7 +97,7 @@ Todo一覧:
 | `npm run dist:start` | コンパイル済み JavaScript を実行           |
 
 
-## 技術構成
+**技術構成**
 
 - **TypeScript** - 型安全な JavaScript
 - **Vitest** - 高速なテストフレームワーク
@@ -78,7 +107,7 @@ Todo一覧:
 - **SQLite** - ローカルファイルデータベース
 
 
-## ファイル構成
+**ファイル構成**
 
 ```
 .
@@ -170,38 +199,38 @@ dist/
 
 開発用と本番用で tsconfig を分離しています。
 
-| ファイル | 用途 | 使用タイミング |
-|---------|------|--------------|
-| `tsconfig.base.json` | 共通設定（継承元） | - |
-| `tsconfig.json` | 開発用（緩いチェック） | `npm run dev` |
+| ファイル                 | 用途          | 使用タイミング              |
+|----------------------|-------------|----------------------|
+| `tsconfig.base.json` | 共通設定（継承元）   | -                    |
+| `tsconfig.json`      | 開発用（緩いチェック） | `npm run dev`        |
 | `tsconfig.prod.json` | 本番用（厳密チェック） | `npm run dist:build` |
 
 **設定の違い:**
 
-| オプション | 開発用 | 本番用 |
-|-----------|:-----:|:-----:|
-| `noUnusedLocals` | - | ✓ |
-| `noUnusedParameters` | - | ✓ |
-| `noImplicitReturns` | - | ✓ |
-| `noFallthroughCasesInSwitch` | - | ✓ |
-| `noUncheckedIndexedAccess` | - | ✓ |
-| `exactOptionalPropertyTypes` | - | ✓ |
-| `declaration` | - | ✓ |
-| `declarationMap` | - | ✓ |
-| `removeComments` | - | ✓ |
+| オプション                        | 開発用 | 本番用 |
+|------------------------------|:---:|:---:|
+| `noUnusedLocals`             |  -  |  ✓  |
+| `noUnusedParameters`         |  -  |  ✓  |
+| `noImplicitReturns`          |  -  |  ✓  |
+| `noFallthroughCasesInSwitch` |  -  |  ✓  |
+| `noUncheckedIndexedAccess`   |  -  |  ✓  |
+| `exactOptionalPropertyTypes` |  -  |  ✓  |
+| `declaration`                |  -  |  ✓  |
+| `declarationMap`             |  -  |  ✓  |
+| `removeComments`             |  -  |  ✓  |
 
 開発時は未使用変数などのエラーを抑制し、素早く開発できます。本番ビルド時は厳密なチェックを行い、品質を確保します。
 
 **厳密な型チェック設定:**
 
-| オプション                     | 効果                              |
-|----------------------------|-----------------------------------|
-| `noUnusedLocals`           | 未使用のローカル変数をエラー                  |
-| `noUnusedParameters`       | 未使用のパラメータをエラー                   |
-| `noImplicitReturns`        | 全パスで return を強制                 |
-| `noFallthroughCasesInSwitch` | switch の fall-through を禁止      |
-| `noUncheckedIndexedAccess` | 配列アクセスに undefined を含める         |
-| `exactOptionalPropertyTypes` | optional プロパティを厳密にチェック         |
+| オプション                        | 効果                        |
+|------------------------------|---------------------------|
+| `noUnusedLocals`             | 未使用のローカル変数をエラー            |
+| `noUnusedParameters`         | 未使用のパラメータをエラー             |
+| `noImplicitReturns`          | 全パスで return を強制           |
+| `noFallthroughCasesInSwitch` | switch の fall-through を禁止 |
+| `noUncheckedIndexedAccess`   | 配列アクセスに undefined を含める    |
+| `exactOptionalPropertyTypes` | optional プロパティを厳密にチェック    |
 
 
 ## リポジトリパターン
@@ -292,3 +321,19 @@ DATABASE_URL="file:./dev.db"
 ```
 
 
+## タグ機能
+
+### データ構造（多対多リレーション）
+
+```
+  todos ←──┐
+           │ todo_tags (中間テーブル)
+  tags  ←──┘
+```
+
+### 検索機能の拡張
+
+search コマンドがタイトルとタグの両方で検索できる
+
+
+__END__

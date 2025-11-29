@@ -253,6 +253,130 @@ describe('CLI', () => {
       expect(exitCode).toBe(0);
       expect(stdout).toContain('"存在しない" に一致するTodoはありません');
     });
+
+    it('タグでも検索できる', { timeout: 10000 }, () => {
+      runCli('add タスク1');
+      runCli('add タスク2');
+      runCli('tag set 1 仕事');
+      const { stdout, exitCode } = runCli('search 仕事');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('検索結果 (1件)');
+      expect(stdout).toContain('タスク1');
+      expect(stdout).toContain('[仕事]');
+    });
+  });
+
+  describe('tag', () => {
+    it('サブコマンドなしでエラーになる', () => {
+      const { stdout, exitCode } = runCli('tag');
+      expect(exitCode).toBe(1);
+      expect(stdout).toContain('tagサブコマンドを指定してください');
+    });
+
+    describe('tag list', () => {
+      it('タグがない場合はメッセージを表示する', () => {
+        const { stdout, exitCode } = runCli('tag list');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグはありません');
+      });
+
+      it('タグ一覧を表示する', { timeout: 10000 }, () => {
+        runCli('tag add 仕事');
+        runCli('tag add プライベート');
+        const { stdout, exitCode } = runCli('tag list');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグ一覧:');
+        expect(stdout).toContain('仕事');
+        expect(stdout).toContain('プライベート');
+      });
+    });
+
+    describe('tag add', () => {
+      it('タグを作成できる', () => {
+        const { stdout, exitCode } = runCli('tag add 仕事');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグを作成しました: 仕事');
+      });
+
+      it('タグ名なしでエラーになる', () => {
+        const { stdout, exitCode } = runCli('tag add');
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain('タグ名を指定してください');
+      });
+
+      it('既存のタグ名でエラーになる', () => {
+        runCli('tag add 仕事');
+        const { stdout, exitCode } = runCli('tag add 仕事');
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain('既に存在します');
+      });
+    });
+
+    describe('tag delete', () => {
+      it('タグを削除できる', () => {
+        runCli('tag add 仕事');
+        const { stdout, exitCode } = runCli('tag delete 仕事');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグを削除しました: 仕事');
+      });
+
+      it('存在しないタグでエラーになる', () => {
+        const { stdout, exitCode } = runCli('tag delete 存在しない');
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain('存在しません');
+      });
+    });
+
+    describe('tag set', () => {
+      it('Todoにタグを設定できる', { timeout: 10000 }, () => {
+        runCli('add タスク1');
+        const { stdout, exitCode } = runCli('tag set 1 仕事');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグを設定しました: 仕事 → タスク1');
+      });
+
+      it('複数タグをカンマ区切りで設定できる', { timeout: 10000 }, () => {
+        runCli('add タスク1');
+        const { stdout, exitCode } = runCli('tag set 1 仕事,緊急');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグを設定しました: 仕事, 緊急 → タスク1');
+      });
+
+      it('番号なしでエラーになる', () => {
+        const { stdout, exitCode } = runCli('tag set');
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain('有効な番号を指定してください');
+      });
+    });
+
+    describe('tag unset', () => {
+      it('Todoからタグを解除できる', { timeout: 10000 }, () => {
+        runCli('add タスク1');
+        runCli('tag set 1 仕事');
+        const { stdout, exitCode } = runCli('tag unset 1 仕事');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグを解除しました: 仕事 ← タスク1');
+      });
+    });
+
+    describe('tag show', () => {
+      it('タグでTodoを絞り込める', { timeout: 10000 }, () => {
+        runCli('add タスク1');
+        runCli('add タスク2');
+        runCli('tag set 1 仕事');
+        const { stdout, exitCode } = runCli('tag show 仕事');
+        expect(exitCode).toBe(0);
+        expect(stdout).toContain('タグ "仕事" のTodo (1件)');
+        expect(stdout).toContain('タスク1');
+        expect(stdout).not.toContain('タスク2');
+      });
+
+      it('存在しないタグでエラーになる', () => {
+        const { stdout, exitCode } = runCli('tag show 存在しない');
+        expect(exitCode).toBe(1);
+        expect(stdout).toContain('存在しません');
+      });
+    });
   });
 
   describe('統合シナリオ', () => {
