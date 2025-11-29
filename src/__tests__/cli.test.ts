@@ -197,6 +197,28 @@ describe('CLI', () => {
     });
   });
 
+  describe('export', () => {
+    it('Todoがない場合はマークダウンで空を表示する', () => {
+      const { stdout, exitCode } = runCli('export');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('# Todo List');
+      expect(stdout).toContain('> 完了率: 0% (0/0)');
+      expect(stdout).toContain('_Todoはありません_');
+    });
+
+    it('Todoをマークダウン形式でエクスポートする', { timeout: 10000 }, () => {
+      runCli('add タスク1');
+      runCli('add タスク2');
+      runCli('done 1');
+      const { stdout, exitCode } = runCli('export');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('# Todo List');
+      expect(stdout).toContain('> 完了率: 50% (1/2)');
+      expect(stdout).toContain('- [x] タスク1');
+      expect(stdout).toContain('- [ ] タスク2');
+    });
+  });
+
   describe('統合シナリオ', () => {
     it('追加→完了→削除の一連の操作ができる', { timeout: 30000 }, () => {
       // 追加
