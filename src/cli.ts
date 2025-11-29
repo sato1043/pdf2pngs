@@ -16,6 +16,7 @@ function showUsage(): void {
   node cli.js delete <number> - Todoを削除する
   node cli.js status         - 統計を表示
   node cli.js export         - マークダウン形式でエクスポート
+  node cli.js search <query> - タイトルで検索
 
 Environment:
   DB_TYPE  - リポジトリタイプ (sqlite|prisma) [default: sqlite]
@@ -136,6 +137,27 @@ async function run(repo: TodoRepository, command: string, args: string[]): Promi
           const date = todo.createdAt.toLocaleDateString('ja-JP');
           console.log(`- ${checkbox} ${todo.title} _(${date})_`);
         }
+      }
+      break;
+    }
+
+    case 'search': {
+      const query = args.join(' ');
+      if (!query) {
+        console.error('Error: 検索キーワードを指定してください');
+        process.exit(1);
+      }
+      const todos = await repo.findAll();
+      const queryLower = query.toLowerCase();
+      const results = todos.filter((t) =>
+        t.title.toLowerCase().includes(queryLower)
+      );
+
+      if (results.length === 0) {
+        console.log(`"${query}" に一致するTodoはありません`);
+      } else {
+        console.log(`検索結果 (${results.length}件):`);
+        results.forEach((todo, i) => console.log(formatTodo(todo, i)));
       }
       break;
     }

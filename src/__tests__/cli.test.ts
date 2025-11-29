@@ -219,6 +219,42 @@ describe('CLI', () => {
     });
   });
 
+  describe('search', () => {
+    it('キーワードなしでエラーになる', () => {
+      const { stdout, exitCode } = runCli('search');
+      expect(exitCode).toBe(1);
+      expect(stdout).toContain('検索キーワードを指定してください');
+    });
+
+    it('タイトルで検索できる', { timeout: 10000 }, () => {
+      runCli('add 買い物に行く');
+      runCli('add メールを送る');
+      runCli('add 買い物リスト作成');
+      const { stdout, exitCode } = runCli('search 買い物');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('検索結果 (2件)');
+      expect(stdout).toContain('買い物に行く');
+      expect(stdout).toContain('買い物リスト作成');
+      expect(stdout).not.toContain('メールを送る');
+    });
+
+    it('大文字小文字を区別しない', { timeout: 10000 }, () => {
+      runCli('add Hello World');
+      runCli('add goodbye');
+      const { stdout, exitCode } = runCli('search hello');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('検索結果 (1件)');
+      expect(stdout).toContain('Hello World');
+    });
+
+    it('一致しない場合はメッセージを表示する', () => {
+      runCli('add タスク1');
+      const { stdout, exitCode } = runCli('search 存在しない');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('"存在しない" に一致するTodoはありません');
+    });
+  });
+
   describe('統合シナリオ', () => {
     it('追加→完了→削除の一連の操作ができる', { timeout: 30000 }, () => {
       // 追加
