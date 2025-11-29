@@ -30,14 +30,28 @@ npm unlink -g pdf2pngs
 ## 使用方法
 
 ```bash
-# npm link 後
+# ファイルを指定して変換
+pdf2pngs /path/to/document.pdf
+
+# 引数なしでファイルセレクターを起動
 pdf2pngs
 
-# または開発時
+# 開発時
+npm start -- [ファイルパス]
+
+# 開発時 引数なしでファイルセレクターを起動
 npm start
 ```
 
-起動するとファイル選択が開きます：
+**ファイル指定時の出力例：**
+
+```
+変換中: /Users/user/documents/sample.pdf
+PDF変換完了: 10ページ → /Users/user/documents/sample/
+  保存ファイル: page_01.png 〜 page_10.png
+```
+
+**引数なしの場合** - ファイル選択が開きます：
 
 ```
 PDF to PNG Converter
