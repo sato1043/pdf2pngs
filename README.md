@@ -86,11 +86,13 @@ Todo一覧:
 │   ├── index.ts           # エントリーポイント
 │   ├── cli.ts             # CLI層
 │   ├── db.ts              # DB層 (node:sqlite)
+│   ├── repository.ts      # リポジトリ層（抽象化）
+│   ├── generated/prisma/  # Prisma Client（自動生成）
 │   └── __tests__/
 │       ├── cli.test.ts    # CLI層テスト
 │       └── db.test.ts     # DB層テスト
 ├── prisma/
-│   ├── schema.prisma      # Prismaスキーマ（参考用）
+│   ├── schema.prisma      # Prismaスキーマ
 │   └── migrations/        # マイグレーション
 ├── dist/               # コンパイル出力（npm run dist:build で生成）
 ├── package.json
@@ -200,4 +202,93 @@ dist/
 | `noFallthroughCasesInSwitch` | switch の fall-through を禁止      |
 | `noUncheckedIndexedAccess` | 配列アクセスに undefined を含める         |
 | `exactOptionalPropertyTypes` | optional プロパティを厳密にチェック         |
+
+
+## リポジトリパターン
+
+データアクセスを抽象化するリポジトリパターンを実装しています。
+
+### インターフェース
+
+```typescript
+interface TodoRepository {
+  create(data: TodoCreate): Promise<Todo>;
+  findAll(): Promise<Todo[]>;
+  findById(id: string): Promise<Todo | null>;
+  update(id: string, data: TodoUpdate): Promise<Todo | null>;
+  delete(id: string): Promise<boolean>;
+  reset(): Promise<void>;
+  close(): Promise<void>;
+}
+```
+
+### 実装
+
+| クラス                | 説明                          |
+|--------------------|-----------------------------|
+| `SqliteRepository` | node:sqlite を使用（軽量・組み込み）    |
+| `PrismaRepository` | Prisma Client を使用（型安全・機能豊富） |
+
+### 使用例
+
+```typescript
+import { SqliteRepository, PrismaRepository, createRepository } from './repository.js';
+
+// SQLite（ファクトリ関数）
+const repo = createRepository('sqlite', { filename: 'todos.db' });
+
+// SQLite（直接インスタンス化）
+const sqliteRepo = new SqliteRepository(':memory:');
+
+// Prisma（要PrismaClient注入）
+import { PrismaClient } from './generated/prisma/client.js';
+const prisma = new PrismaClient({ /* options */ });
+const prismaRepo = createRepository('prisma', { prisma });
+
+// CRUD操作（両実装で同じインターフェース）
+const todo = await repo.create({ title: '買い物' });
+const todos = await repo.findAll();
+const found = await repo.findById(todo.id);
+await repo.update(todo.id, { completed: true });
+await repo.delete(todo.id);
+await repo.close();
+```
+
+
+## Prisma
+
+### セットアップ
+
+```bash
+# スキーマからクライアント生成
+npx prisma generate
+
+# マイグレーション作成・実行
+npx prisma migrate dev --name <name>
+
+# DBをブラウザで確認
+npx prisma studio
+```
+
+### スキーマ
+
+```prisma
+// prisma/schema.prisma
+model Todo {
+  id        String   @id @default(uuid())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("todos")
+}
+```
+
+### 環境変数
+
+```bash
+# .env
+DATABASE_URL="file:./dev.db"
+```
+
 
