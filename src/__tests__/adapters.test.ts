@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { FileAdapter, FileProcessResult } from '../adapters/FileAdapter.js';
 import { AdapterRegistry } from '../adapters/AdapterRegistry.js';
-import { PdfAdapter } from '../adapters/PdfAdapter.js';
+import { PdfFileAdapter } from '../adapters/PdfFileAdapter.js';
 
-// pdfToImages モジュールをモック
-vi.mock('../pdfToImages.js', () => ({
-  convertPdfToImages: vi.fn(),
+// pdf2pngs モジュールをモック
+vi.mock('../adapters/pdf2pngs.js', () => ({
+  convertPdfToPngs: vi.fn(),
 }));
 
-import { convertPdfToImages } from '../pdfToImages.js';
-const mockConvertPdfToImages = vi.mocked(convertPdfToImages);
+import { convertPdfToPngs } from '../adapters/pdf2pngs.js';
+const mockConvertPdfToPngs = vi.mocked(convertPdfToPngs);
 
 // テスト用のダミーアダプター
 class DummyAdapter implements FileAdapter {
@@ -69,7 +69,7 @@ describe('AdapterRegistry', () => {
     beforeEach(() => {
       registry.register(new DummyAdapter('.txt'));
       registry.register(new DummyAdapter('.md'));
-      registry.register(new PdfAdapter());
+      registry.register(new PdfFileAdapter());
     });
 
     it('対応するアダプターを見つけられる', () => {
@@ -78,16 +78,16 @@ describe('AdapterRegistry', () => {
       expect(adapter?.name).toBe('DummyAdapter');
     });
 
-    it('PDFファイルに対してPdfAdapterを返す', () => {
+    it('PDFファイルに対してPdfFileAdapterを返す', () => {
       const adapter = registry.findAdapter('/path/to/document.pdf');
       expect(adapter).toBeDefined();
-      expect(adapter?.name).toBe('PdfAdapter');
+      expect(adapter?.name).toBe('PdfFileAdapter');
     });
 
     it('大文字小文字を区別しない', () => {
       const adapter = registry.findAdapter('/path/to/DOCUMENT.PDF');
       expect(adapter).toBeDefined();
-      expect(adapter?.name).toBe('PdfAdapter');
+      expect(adapter?.name).toBe('PdfFileAdapter');
     });
 
     it('対応するアダプターがない場合はundefinedを返す', () => {
@@ -106,7 +106,7 @@ describe('AdapterRegistry', () => {
   describe('hasAdapter', () => {
     beforeEach(() => {
       registry.register(new DummyAdapter('.txt'));
-      registry.register(new PdfAdapter());
+      registry.register(new PdfFileAdapter());
     });
 
     it('対応するアダプターがある場合はtrueを返す', () => {
@@ -122,10 +122,10 @@ describe('AdapterRegistry', () => {
   describe('getAdapterNames', () => {
     it('登録されているアダプター名の一覧を取得できる', () => {
       registry.register(new DummyAdapter('.txt'));
-      registry.register(new PdfAdapter());
+      registry.register(new PdfFileAdapter());
       const names = registry.getAdapterNames();
       expect(names).toContain('DummyAdapter');
-      expect(names).toContain('PdfAdapter');
+      expect(names).toContain('PdfFileAdapter');
     });
 
     it('空のレジストリでは空配列を返す', () => {
@@ -135,11 +135,11 @@ describe('AdapterRegistry', () => {
   });
 });
 
-describe('PdfAdapter', () => {
-  let adapter: PdfAdapter;
+describe('PdfFileAdapter', () => {
+  let adapter: PdfFileAdapter;
 
   beforeEach(() => {
-    adapter = new PdfAdapter();
+    adapter = new PdfFileAdapter();
     vi.clearAllMocks();
   });
 
@@ -170,7 +170,7 @@ describe('PdfAdapter', () => {
 
   describe('process', () => {
     it('変換成功時に成功メッセージを返す', async () => {
-      mockConvertPdfToImages.mockResolvedValue({
+      mockConvertPdfToPngs.mockResolvedValue({
         success: true,
         outputDir: '/path/to/document',
         pageCount: 5,
@@ -193,7 +193,7 @@ describe('PdfAdapter', () => {
     });
 
     it('変換失敗時にエラーメッセージを返す', async () => {
-      mockConvertPdfToImages.mockResolvedValue({
+      mockConvertPdfToPngs.mockResolvedValue({
         success: false,
         outputDir: '/path/to/document',
         pageCount: 0,
@@ -208,7 +208,7 @@ describe('PdfAdapter', () => {
     });
 
     it('例外発生時にエラーメッセージを返す', async () => {
-      mockConvertPdfToImages.mockRejectedValue(new Error('予期せぬエラー'));
+      mockConvertPdfToPngs.mockRejectedValue(new Error('予期せぬエラー'));
 
       const result = await adapter.process('/path/to/document.pdf');
 
@@ -217,7 +217,7 @@ describe('PdfAdapter', () => {
     });
 
     it('エラーがundefinedの場合はデフォルトメッセージを返す', async () => {
-      mockConvertPdfToImages.mockResolvedValue({
+      mockConvertPdfToPngs.mockResolvedValue({
         success: false,
         outputDir: '/path/to/document',
         pageCount: 0,
@@ -234,9 +234,9 @@ describe('PdfAdapter', () => {
 
   describe('オプション', () => {
     it('スケールオプションを指定できる', async () => {
-      const adapterWithScale = new PdfAdapter({ scale: 3.0 });
+      const adapterWithScale = new PdfFileAdapter({ scale: 3.0 });
 
-      mockConvertPdfToImages.mockResolvedValue({
+      mockConvertPdfToPngs.mockResolvedValue({
         success: true,
         outputDir: '/path/to/document',
         pageCount: 1,
@@ -245,14 +245,14 @@ describe('PdfAdapter', () => {
 
       await adapterWithScale.process('/path/to/document.pdf');
 
-      expect(mockConvertPdfToImages).toHaveBeenCalledWith(
+      expect(mockConvertPdfToPngs).toHaveBeenCalledWith(
         '/path/to/document.pdf',
         { scale: 3.0 }
       );
     });
 
     it('スケールオプションが未指定の場合は空オブジェクトを渡す', async () => {
-      mockConvertPdfToImages.mockResolvedValue({
+      mockConvertPdfToPngs.mockResolvedValue({
         success: true,
         outputDir: '/path/to/document',
         pageCount: 1,
@@ -261,7 +261,7 @@ describe('PdfAdapter', () => {
 
       await adapter.process('/path/to/document.pdf');
 
-      expect(mockConvertPdfToImages).toHaveBeenCalledWith(
+      expect(mockConvertPdfToPngs).toHaveBeenCalledWith(
         '/path/to/document.pdf',
         {}
       );
@@ -271,17 +271,17 @@ describe('PdfAdapter', () => {
 
 describe('FileAdapter インターフェース', () => {
   it('name プロパティを持つ', () => {
-    const adapter: FileAdapter = new PdfAdapter();
-    expect(adapter.name).toBe('PdfAdapter');
+    const adapter: FileAdapter = new PdfFileAdapter();
+    expect(adapter.name).toBe('PdfFileAdapter');
   });
 
   it('canHandle メソッドを持つ', () => {
-    const adapter: FileAdapter = new PdfAdapter();
+    const adapter: FileAdapter = new PdfFileAdapter();
     expect(typeof adapter.canHandle).toBe('function');
   });
 
   it('process メソッドを持つ', () => {
-    const adapter: FileAdapter = new PdfAdapter();
+    const adapter: FileAdapter = new PdfFileAdapter();
     expect(typeof adapter.process).toBe('function');
   });
 });
@@ -289,9 +289,9 @@ describe('FileAdapter インターフェース', () => {
 describe('統合テスト: Registry + Adapter', () => {
   it('レジストリから取得したアダプターでファイルを処理できる', async () => {
     const registry = new AdapterRegistry();
-    registry.register(new PdfAdapter());
+    registry.register(new PdfFileAdapter());
 
-    mockConvertPdfToImages.mockResolvedValue({
+    mockConvertPdfToPngs.mockResolvedValue({
       success: true,
       outputDir: '/path/to/document',
       pageCount: 3,
@@ -315,7 +315,7 @@ describe('統合テスト: Registry + Adapter', () => {
 
   it('対応するアダプターがない場合は処理をスキップできる', () => {
     const registry = new AdapterRegistry();
-    registry.register(new PdfAdapter());
+    registry.register(new PdfFileAdapter());
 
     const adapter = registry.findAdapter('/path/to/file.txt');
     expect(adapter).toBeUndefined();

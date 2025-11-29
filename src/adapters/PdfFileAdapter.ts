@@ -1,11 +1,11 @@
 import { extname } from 'node:path';
 import type { FileAdapter, FileProcessResult } from './FileAdapter.js';
-import { convertPdfToImages } from '../pdfToImages.js';
+import { convertPdfToPngs } from './pdf2pngs.js';
 
 /**
  * PDF変換オプション
  */
-export interface PdfAdapterOptions {
+export interface PdfFileAdapterOptions {
   /** 解像度スケール（デフォルト: 2.0） */
   scale?: number;
 }
@@ -13,11 +13,11 @@ export interface PdfAdapterOptions {
 /**
  * PDFファイルをPNG画像に変換するアダプター
  */
-export class PdfAdapter implements FileAdapter {
-  readonly name = 'PdfAdapter';
-  private options: PdfAdapterOptions;
+export class PdfFileAdapter implements FileAdapter {
+  readonly name = 'PdfFileAdapter';
+  private options: PdfFileAdapterOptions;
 
-  constructor(options: PdfAdapterOptions = {}) {
+  constructor(options: PdfFileAdapterOptions = {}) {
     this.options = options;
   }
 
@@ -39,7 +39,7 @@ export class PdfAdapter implements FileAdapter {
     try {
       // undefinedの場合はオプションを渡さない
       const options = this.options.scale !== undefined ? { scale: this.options.scale } : {};
-      const result = await convertPdfToImages(filePath, options);
+      const result = await convertPdfToPngs(filePath, options);
 
       if (result.success) {
         const padLength = String(result.pageCount).length;

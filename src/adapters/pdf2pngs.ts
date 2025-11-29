@@ -20,7 +20,7 @@ export interface PdfConversionOptions {
  * @param options 変換オプション
  * @returns 変換結果
  */
-export async function convertPdfToImages(
+export async function convertPdfToPngs(
   pdfPath: string,
   options: PdfConversionOptions = {}
 ): Promise<PdfConversionResult> {
