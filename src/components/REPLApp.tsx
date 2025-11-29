@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { execSync } from 'node:child_process';
 import { statSync } from 'node:fs';
@@ -11,7 +11,7 @@ import { TagList } from './TagList.js';
 import { Message } from './Message.js';
 import { Usage } from './Usage.js';
 import { FileSelector } from './FileSelector.js';
-import { isPdfFile, convertPdfToImages } from '../pdfToImages.js';
+import { AdapterRegistry, PdfAdapter } from '../adapters/index.js';
 
 interface REPLAppProps {
   repo: TodoRepository;
@@ -40,6 +40,13 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [ctrlDPressed, setCtrlDPressed] = useState(false); // Ctrl+D 2回押し検出用
   const [fileSelectMode, setFileSelectMode] = useState(false); // ファイル選択モード
+
+  // ファイルアダプターレジストリの初期化
+  const adapterRegistry = useMemo(() => {
+    const registry = new AdapterRegistry();
+    registry.register(new PdfAdapter());
+    return registry;
+  }, []);
 
   // Ctrl+D 2回押しのタイムアウト（1秒で解除、メッセージも消去）
   const ctrlDMessage = '終了するには１秒以内に Ctrl+D を２回押してください';
@@ -235,51 +242,49 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
   const handleFileSelect = useCallback(async (filePath: string) => {
     const fileInfo = getFileTypeInfo(filePath);
 
-    // PDFファイルの場合は画像に変換（処理中フラグを先に設定してからファイル選択モードを終了）
-    if (isPdfFile(filePath)) {
+    // 対応するアダプターを検索
+    const adapter = adapterRegistry.findAdapter(filePath);
+
+    if (adapter) {
+      // アダプターが見つかった場合は処理を実行
+      // 処理中フラグを先に設定してからファイル選択モードを終了
       setIsProcessing(true);
       setFileSelectMode(false);
       addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
       addToHistory({ type: 'message', messageType: 'info', text: `  ${fileInfo}` });
-      addToHistory({ type: 'message', messageType: 'info', text: 'PDFを画像に変換中...' });
+      addToHistory({ type: 'message', messageType: 'info', text: `処理中... (${adapter.name})` });
 
       try {
-        const result = await convertPdfToImages(filePath);
+        const result = await adapter.process(filePath);
 
         if (result.success) {
-          addToHistory({
-            type: 'message',
-            messageType: 'success',
-            text: `PDF変換完了: ${result.pageCount}ページ → ${result.outputDir}/`,
-          });
-          addToHistory({
-            type: 'message',
-            messageType: 'info',
-            text: `  保存ファイル: page_01.png 〜 page_${String(result.pageCount).padStart(2, '0')}.png`,
-          });
+          // 成功メッセージを表示
+          for (const msg of result.messages) {
+            addToHistory({ type: 'message', messageType: msg.type, text: msg.text });
+          }
         } else {
           addToHistory({
             type: 'message',
             messageType: 'error',
-            text: `PDF変換エラー: ${result.error}`,
+            text: `処理エラー: ${result.error}`,
           });
         }
       } catch (error) {
         addToHistory({
           type: 'message',
           messageType: 'error',
-          text: `PDF変換エラー: ${error instanceof Error ? error.message : String(error)}`,
+          text: `処理エラー: ${error instanceof Error ? error.message : String(error)}`,
         });
       } finally {
         setIsProcessing(false);
       }
     } else {
-      // PDF以外のファイル
+      // アダプターが見つからない場合はファイル情報のみ表示
       setFileSelectMode(false);
       addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
       addToHistory({ type: 'message', messageType: 'info', text: `  ${fileInfo}` });
     }
-  }, [addToHistory, getFileTypeInfo]);
+  }, [addToHistory, getFileTypeInfo, adapterRegistry]);
 
   const handleFileSelectCancel = useCallback(() => {
     setFileSelectMode(false);
