@@ -40,6 +40,7 @@ todo> exit
 |------------------------|------------------|
 | `help`                 | ヘルプを表示      |
 | `clear`                | 画面をクリア      |
+| `select`               | ファイル選択ダイアログを開く |
 | `exit` / `quit`        | 終了             |
 | `!<shell command>`     | シェルコマンド実行 |
 
@@ -59,6 +60,7 @@ todo> exit
 | `Ctrl+K`       | カーソル以降を削除  |
 | `Ctrl+W`       | 単語を削除         |
 | `Ctrl+D` ×2    | 終了（1秒以内に2回押し） |
+| `Ctrl+O`       | ファイル選択ダイアログを開く |
 
 
 ### コマンドラインモード（単発実行）
@@ -156,6 +158,36 @@ $ npm start -- search 仕事
 | tag show <name>       | タグでTodoを絞り込み       |
 
 
+**ファイル選択機能（REPLモードのみ）**
+
+`select` コマンドまたは `Ctrl+O` でファイル選択ダイアログを開けます：
+
+```bash
+todo> select
+┌ ファイルを選択 (↑↓: 移動, Enter: 選択, Esc: キャンセル)
+│
+│ /Users/user/project
+│
+│ ▸ 📁 src/
+│   📁 dist/
+│   📄 package.json
+│   📄 README.md
+└
+
+# ファイルを選択すると...
+選択されたファイル: /Users/user/project/README.md
+  拡張子: .md, サイズ: 12.5 KB, タイプ: text/plain
+```
+
+ファイル選択時に表示される情報:
+
+| 項目 | 説明 |
+|------|------|
+| 拡張子 | ファイルの拡張子（なければ `(拡張子なし)`） |
+| サイズ | B / KB / MB 形式で表示 |
+| タイプ | MIME タイプ（`file` コマンドで取得） |
+
+
 ## 構成
 
 | npmスクリプト             | 説明                               |
@@ -200,6 +232,7 @@ $ npm start -- search 仕事
 │   │   ├── TagList.tsx    # タグ一覧表示
 │   │   ├── Message.tsx    # メッセージ表示
 │   │   ├── Usage.tsx      # ヘルプ表示
+│   │   ├── FileSelector.tsx # ファイル選択ダイアログ
 │   │   └── index.tsx      # エクスポート
 │   ├── generated/prisma/  # Prisma Client（自動生成）
 │   └── __tests__/
@@ -463,7 +496,8 @@ cli.tsx (エントリーポイント)
 ├── Export.tsx      # マークダウン出力
 ├── TagList.tsx     # タグ一覧
 ├── Message.tsx     # 成功/エラーメッセージ
-└── Usage.tsx       # ヘルプ表示
+├── Usage.tsx       # ヘルプ表示
+└── FileSelector.tsx # ファイル選択ダイアログ
 ```
 
 ### REPLモードの状態管理

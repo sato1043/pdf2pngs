@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { execSync } from 'node:child_process';
+import { statSync } from 'node:fs';
+import { extname } from 'node:path';
 import type { TodoRepository, Todo, TodoWithTags, Tag } from '../repository.js';
 import { TodoList } from './TodoList.js';
 import { Status } from './Status.js';
@@ -198,11 +200,43 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
     setHistory(prev => [...prev, item]);
   }, []);
 
+  // ファイルタイプを取得するヘルパー関数
+  const getFileTypeInfo = useCallback((filePath: string): string => {
+    try {
+      const stat = statSync(filePath);
+      const ext = extname(filePath).toLowerCase() || '(拡張子なし)';
+      const size = stat.size;
+      const sizeStr = size < 1024
+        ? `${size} B`
+        : size < 1024 * 1024
+          ? `${(size / 1024).toFixed(1)} KB`
+          : `${(size / 1024 / 1024).toFixed(1)} MB`;
+
+      // file コマンドで MIME タイプを取得（macOS/Linux）
+      let mimeType = '';
+      try {
+        mimeType = execSync(`file --brief --mime-type "${filePath}"`, { encoding: 'utf-8' }).trim();
+      } catch {
+        // file コマンドが使えない場合は拡張子のみ
+      }
+
+      const parts = [`拡張子: ${ext}`, `サイズ: ${sizeStr}`];
+      if (mimeType) {
+        parts.push(`タイプ: ${mimeType}`);
+      }
+      return parts.join(', ');
+    } catch {
+      return '(ファイル情報を取得できませんでした)';
+    }
+  }, []);
+
   // ファイル選択ハンドラ
   const handleFileSelect = useCallback((filePath: string) => {
     setFileSelectMode(false);
+    const fileInfo = getFileTypeInfo(filePath);
     addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
-  }, [addToHistory]);
+    addToHistory({ type: 'message', messageType: 'info', text: `  ${fileInfo}` });
+  }, [addToHistory, getFileTypeInfo]);
 
   const handleFileSelectCancel = useCallback(() => {
     setFileSelectMode(false);
