@@ -322,3 +322,6 @@ prisma/dev.db-journal
 
 # CLI test DB
 *.db
+
+# PDF
+*.pdf

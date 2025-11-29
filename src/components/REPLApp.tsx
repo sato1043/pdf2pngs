@@ -11,6 +11,7 @@ import { TagList } from './TagList.js';
 import { Message } from './Message.js';
 import { Usage } from './Usage.js';
 import { FileSelector } from './FileSelector.js';
+import { isPdfFile, convertPdfToImages } from '../pdfToImages.js';
 
 interface REPLAppProps {
   repo: TodoRepository;
@@ -231,11 +232,53 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
   }, []);
 
   // ファイル選択ハンドラ
-  const handleFileSelect = useCallback((filePath: string) => {
-    setFileSelectMode(false);
+  const handleFileSelect = useCallback(async (filePath: string) => {
     const fileInfo = getFileTypeInfo(filePath);
-    addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
-    addToHistory({ type: 'message', messageType: 'info', text: `  ${fileInfo}` });
+
+    // PDFファイルの場合は画像に変換（処理中フラグを先に設定してからファイル選択モードを終了）
+    if (isPdfFile(filePath)) {
+      setIsProcessing(true);
+      setFileSelectMode(false);
+      addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
+      addToHistory({ type: 'message', messageType: 'info', text: `  ${fileInfo}` });
+      addToHistory({ type: 'message', messageType: 'info', text: 'PDFを画像に変換中...' });
+
+      try {
+        const result = await convertPdfToImages(filePath);
+
+        if (result.success) {
+          addToHistory({
+            type: 'message',
+            messageType: 'success',
+            text: `PDF変換完了: ${result.pageCount}ページ → ${result.outputDir}/`,
+          });
+          addToHistory({
+            type: 'message',
+            messageType: 'info',
+            text: `  保存ファイル: page_01.png 〜 page_${String(result.pageCount).padStart(2, '0')}.png`,
+          });
+        } else {
+          addToHistory({
+            type: 'message',
+            messageType: 'error',
+            text: `PDF変換エラー: ${result.error}`,
+          });
+        }
+      } catch (error) {
+        addToHistory({
+          type: 'message',
+          messageType: 'error',
+          text: `PDF変換エラー: ${error instanceof Error ? error.message : String(error)}`,
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    } else {
+      // PDF以外のファイル
+      setFileSelectMode(false);
+      addToHistory({ type: 'message', messageType: 'info', text: `選択されたファイル: ${filePath}` });
+      addToHistory({ type: 'message', messageType: 'info', text: `  ${fileInfo}` });
+    }
   }, [addToHistory, getFileTypeInfo]);
 
   const handleFileSelectCancel = useCallback(() => {

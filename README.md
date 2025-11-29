@@ -188,6 +188,30 @@ todo> select
 | タイプ | MIME タイプ（`file` コマンドで取得） |
 
 
+**PDF → PNG 変換機能**
+
+PDFファイルを選択すると、自動的に各ページをPNG画像に変換します：
+
+```bash
+todo> select
+# PDFファイルを選択...
+
+選択されたファイル: /Users/user/documents/sample.pdf
+  拡張子: .pdf, サイズ: 2.5 MB, タイプ: application/pdf
+PDFを画像に変換中...
+PDF変換完了: 10ページ → /Users/user/documents/sample/
+  保存ファイル: page_01.png 〜 page_10.png
+```
+
+| 変換仕様 | 説明 |
+|---------|------|
+| 出力フォルダ | PDFファイル名と同名のサブフォルダ |
+| 出力場所 | PDFファイルと同じディレクトリ内 |
+| ファイル名 | `page_01.png`, `page_02.png`, ... (ゼロパディング) |
+| 解像度 | 2倍スケール（高解像度） |
+| 形式 | PNG |
+
+
 ## 構成
 
 | npmスクリプト             | 説明                               |
@@ -212,6 +236,7 @@ todo> select
 - **ESModule** - ネイティブ ESM（`"type": "module"`）
 - **Prisma** - ORマッパー
 - **SQLite** - ローカルファイルデータベース
+- **pdf-to-png-converter** - PDF→PNG変換（外部依存なし）
 
 
 **ファイル構成**
@@ -223,6 +248,7 @@ todo> select
 │   ├── cli.tsx            # CLI層（React Ink）
 │   ├── db.ts              # DB層 (node:sqlite)
 │   ├── repository.ts      # リポジトリ層（抽象化）
+│   ├── pdfToImages.ts     # PDF→PNG変換ユーティリティ
 │   ├── components/        # React Ink コンポーネント
 │   │   ├── App.tsx        # 単発実行モード
 │   │   ├── REPLApp.tsx    # REPLモード（対話型）
