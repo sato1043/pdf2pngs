@@ -4,13 +4,13 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "dev:watch": "tsx watch src/index.ts",
-    "dev:debug": "tsx --inspect src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
+    "dev": "tsx --inspect watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.prod.json --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "dist:clean": "rm -rf dist",
+    "dist:build": "npm run dist:clean && npm run typecheck && tsc -p tsconfig.prod.json",
+    "dist:start": "node dist/index.js"
   },
   "author": "",
   "license": "ISC",
