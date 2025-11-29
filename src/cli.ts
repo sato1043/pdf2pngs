@@ -57,7 +57,7 @@ function main(): void {
       }
 
       case 'done': {
-        const num = parseInt(args[0], 10);
+        const num = parseInt(args[0] ?? '', 10);
         if (isNaN(num) || num < 1) {
           console.error('Error: 有効な番号を指定してください');
           process.exit(1);
@@ -74,7 +74,7 @@ function main(): void {
       }
 
       case 'delete': {
-        const num = parseInt(args[0], 10);
+        const num = parseInt(args[0] ?? '', 10);
         if (isNaN(num) || num < 1) {
           console.error('Error: 有効な番号を指定してください');
           process.exit(1);
@@ -100,4 +100,4 @@ function main(): void {
   }
 }
 
-main();
+export { main };

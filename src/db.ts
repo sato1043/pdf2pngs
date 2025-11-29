@@ -60,7 +60,7 @@ export class Database {
 
   getAll(): Todo[] {
     const stmt = this.db.prepare('SELECT * FROM todos ORDER BY created_at');
-    const rows = stmt.all() as TodoRow[];
+    const rows = stmt.all() as unknown as TodoRow[];
     return rows.map((row) => this.rowToTodo(row));
   }
 

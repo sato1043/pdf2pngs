@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { unlinkSync, existsSync } from 'node:fs';
 
 const TEST_DB = 'test-cli.db';
-const CLI_CMD = `npx tsx src/cli.ts`;
+const CLI_CMD = `npx tsx src/index.ts`;
 
 function runCli(args: string): { stdout: string; exitCode: number } {
   try {

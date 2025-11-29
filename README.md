@@ -2,32 +2,80 @@
 
 TypeScript + Vitest のサンプルプロジェクト
 
+**必要環境**
 
-## セットアップ
+- **Node.js** >= 22.5.0
+
+
+## 実行例
 
 ```bash
-npm install
+
+$ npm install
+$ npm run build
+
+$ npm start -- add "牛乳を買う"
+追加しました: 牛乳を買う
+
+$ npm start -- add "メールを送る"
+追加しました: メールを送る
+
+$ npm start -- list
+Todo一覧:
+1. [ ] 牛乳を買う (2025/11/29)
+2. [ ] メールを送る (2025/11/29)
+
+$ npm start -- done 1
+完了にしました: 牛乳を買う
+
+$ npm start -- list
+Todo一覧:
+1. [✓] 牛乳を買う (2025/11/29)
+2. [ ] メールを送る (2025/11/29)
+
+$ npm start -- delete 1
+削除しました: 牛乳を買う
+
+$ npm start -- list
+Todo一覧:
+1. [ ] メールを送る (2025/11/29)
+
 ```
 
-**技術スタック**
+
+## コマンド
+
+| コマンド                           | 説明              |
+|--------------------------------|-----------------|
+| `npm start -- add <title>`     | Todoを追加         |
+| `npm start -- list`            | Todo一覧を表示       |
+| `npm start -- done <number>`   | 指定番号のTodoを完了にする |
+| `npm start -- delete <number>` | 指定番号のTodoを削除    |
+
+
+## npmスクリプト
+
+| コマンド                 | 説明                               |
+|----------------------|----------------------------------|
+| `npm run start`      | tsxランタイムで実行                      |
+| `npm run dev`        | デバッガ接続可能モードで実行                   |
+| `npm run dev:watch`  | ホットリロード + デバッガ接続可能モードで実行         |
+| `npm run typecheck`  | 型チェックのみ実行（出力なし）                  |
+| `npm test`           | Vitest でテスト実行（ウォッチモード）           |
+| `npm run test:run`   | Vitest でテスト単発実行                  |
+| `npm run dist:clean` | dist ディレクトリを削除                   |
+| `npm run dist:build` | clean → typecheck → tsc の順で本番ビルド |
+| `npm run dist:start` | コンパイル済み JavaScript を実行           |
+
+
+## 技術構成
 
 - **TypeScript** - 型安全な JavaScript
 - **Vitest** - 高速なテストフレームワーク
 - **tsx** - TypeScript 直接実行ツール（esbuild ベース）
 - **ESModule** - ネイティブ ESM（`"type": "module"`）
-
-
-## npmスクリプト
-
-| コマンド                  | 説明                                         |
-|-------------------------|----------------------------------------------|
-| `npm run dev`           | ホットリロード + デバッガ接続可能モードで実行                  |
-| `npm run typecheck`     | 型チェックのみ実行（出力なし）                           |
-| `npm test`              | Vitest でテスト実行（ウォッチモード）                     |
-| `npm run test:run`      | Vitest でテスト単発実行                            |
-| `npm run dist:clean`    | dist ディレクトリを削除                            |
-| `npm run dist:build`    | clean → typecheck → tsc の順で本番ビルド          |
-| `npm run dist:start`    | コンパイル済み JavaScript を実行                     |
+- **Prisma** - ORマッパー
+- **SQLite** - ローカルファイルデータベース
 
 
 ## ファイル構成
@@ -35,9 +83,15 @@ npm install
 ```
 .
 ├── src/
-│   ├── index.ts        # エントリーポイント
-│   ├── math.ts         # 数学関数モジュール
-│   └── math.test.ts    # テストファイル
+│   ├── index.ts           # エントリーポイント
+│   ├── cli.ts             # CLI層
+│   ├── db.ts              # DB層 (node:sqlite)
+│   └── __tests__/
+│       ├── cli.test.ts    # CLI層テスト
+│       └── db.test.ts     # DB層テスト
+├── prisma/
+│   ├── schema.prisma      # Prismaスキーマ（参考用）
+│   └── migrations/        # マイグレーション
 ├── dist/               # コンパイル出力（npm run dist:build で生成）
 ├── package.json
 ├── tsconfig.base.json  # 共通設定（継承元）
@@ -88,7 +142,6 @@ npm test -- --run
 
 ```bash
 npm run dist:build
-npm run dist:start
 ```
 
 TypeScript を JavaScript にコンパイルしてから実行します。
