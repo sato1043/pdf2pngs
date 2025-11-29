@@ -36,14 +36,29 @@ Todo一覧:
 todo> exit
 ```
 
-| REPLコマンド  | 説明             |
-|--------------|------------------|
-| `help`       | ヘルプを表示      |
-| `clear`      | 画面をクリア      |
-| `exit`       | 終了             |
-| `quit`       | 終了             |
-| `Ctrl+D`     | 終了             |
-| `↑` / `↓`    | コマンド履歴を参照 |
+| REPLコマンド            | 説明             |
+|------------------------|------------------|
+| `help`                 | ヘルプを表示      |
+| `clear`                | 画面をクリア      |
+| `exit` / `quit`        | 終了             |
+| `!<shell command>`     | シェルコマンド実行 |
+
+**キーバインド（Emacs風）**
+
+通常モード（`todo>`）とシェルモード（`!>`）の両方で使用可能：
+
+| キー            | 説明               |
+|----------------|--------------------|
+| `↑` / `Ctrl+P` | 履歴を遡る         |
+| `↓` / `Ctrl+N` | 履歴を進む         |
+| `Ctrl+A`       | 行頭へ             |
+| `Ctrl+E`       | 行末へ             |
+| `←` / `Ctrl+B` | 1文字戻る          |
+| `→` / `Ctrl+F` | 1文字進む          |
+| `Ctrl+U`       | 行を削除           |
+| `Ctrl+K`       | カーソル以降を削除  |
+| `Ctrl+W`       | 単語を削除         |
+| `Ctrl+D`       | 終了               |
 
 
 ### コマンドラインモード（単発実行）
@@ -160,7 +175,6 @@ $ npm start -- search 仕事
 
 - **TypeScript** - 型安全な JavaScript
 - **React Ink** - CLI向けReactレンダラー
-- **ink-text-input** - REPLモードのテキスト入力
 - **Vitest** - 高速なテストフレームワーク
 - **tsx** - TypeScript 直接実行ツール（esbuild ベース）
 - **ESModule** - ネイティブ ESM（`"type": "module"`）
@@ -438,7 +452,7 @@ CLIはReact Inkで実装されており、Reactコンポーネントとしてタ
 ```
 cli.tsx (エントリーポイント)
 ├── REPLApp.tsx     # REPLモード（対話型）
-│   ├── TextInput   # コマンド入力（ink-text-input）
+│   ├── useInput    # キーボード入力処理（Emacs風キーバインド）
 │   └── 共通コンポーネント...
 └── App.tsx         # 単発実行モード
     └── 共通コンポーネント...
@@ -454,15 +468,21 @@ cli.tsx (エントリーポイント)
 
 ### REPLモードの状態管理
 
-REPLAppコンポーネントが出力履歴とコマンド履歴を管理：
+REPLAppコンポーネントが入力・出力履歴・コマンド履歴・カーソル位置を管理：
 
 ```typescript
+// 入力テキストとカーソル位置
+const [input, setInput] = useState('');
+const [cursorPos, setCursorPos] = useState(0);
+
 // 出力履歴（画面に表示される内容）
 const [history, setHistory] = useState<OutputItem[]>([]);
 
 // コマンド履歴（↑/↓キーでナビゲーション）
 const [commandHistory, setCommandHistory] = useState<string[]>([]);
 ```
+
+カスタム `useInput` フックでキーボード入力を処理し、Emacs風キーバインドを実現しています。
 
 ### メリット
 

@@ -24,9 +24,18 @@ export function Usage() {
       <Text>  help                  - このヘルプを表示</Text>
       <Text>  clear                 - 画面をクリア</Text>
       <Text>  exit / quit / Ctrl+D  - 終了</Text>
+      <Text>  !{'<shell command>'}      - シェルコマンドを実行</Text>
       <Text />
-      <Text bold>Tips:</Text>
-      <Text>  ↑/↓                   - コマンド履歴を参照</Text>
+      <Text bold>キーバインド:</Text>
+      <Text>  ↑ / Ctrl+P            - 履歴を遡る</Text>
+      <Text>  ↓ / Ctrl+N            - 履歴を進む</Text>
+      <Text>  Ctrl+A                - 行頭へ</Text>
+      <Text>  Ctrl+E                - 行末へ</Text>
+      <Text>  Ctrl+B / ←            - 1文字戻る</Text>
+      <Text>  Ctrl+F / →            - 1文字進む</Text>
+      <Text>  Ctrl+U                - 行を削除</Text>
+      <Text>  Ctrl+K                - カーソル以降を削除</Text>
+      <Text>  Ctrl+W                - 単語を削除</Text>
     </Box>
   );
 }

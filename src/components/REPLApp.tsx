@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
-import TextInput from 'ink-text-input';
+import { execSync } from 'node:child_process';
 import type { TodoRepository, Todo, TodoWithTags, Tag } from '../repository.js';
 import { TodoList } from './TodoList.js';
 import { Status } from './Status.js';
@@ -23,49 +23,127 @@ type OutputItem =
   | { type: 'export'; todos: Todo[] }
   | { type: 'tagList'; tags: Tag[] }
   | { type: 'searchResults'; todos: TodoWithTags[]; query: string }
-  | { type: 'usage'; showError?: string | undefined };
+  | { type: 'usage'; showError?: string | undefined }
+  | { type: 'shell'; output: string };
 
 export function REPLApp({ repo, onExit }: REPLAppProps) {
   const { exit } = useApp();
   const [input, setInput] = useState('');
+  const [cursorPos, setCursorPos] = useState(0); // シェルモード用カーソル位置
   const [history, setHistory] = useState<OutputItem[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // コマンド履歴ナビゲーション & Ctrl+D終了
-  useInput(async (input, key) => {
+  // 入力値からシェルモードを判定
+  const isShellMode = input.startsWith('!');
+  const shellInput = isShellMode ? input.slice(1) : ''; // !を除いた部分
+
+  // コマンド履歴ナビゲーション & 特殊キー処理
+  useInput(async (ch, key) => {
     if (isProcessing) return;
 
     // Ctrl+C でヒントを表示
-    if (input === 'c' && key.ctrl) {
+    if (ch === 'c' && key.ctrl) {
       addToHistory({ type: 'message', messageType: 'info', text: '終了するには quit または Ctrl+D を入力してください' });
       return;
     }
 
     // Ctrl+D で終了
-    if (input === 'd' && key.ctrl) {
+    if (ch === 'd' && key.ctrl) {
       await repo.close();
       onExit();
       exit();
       return;
     }
 
-    if (key.upArrow && commandHistory.length > 0) {
-      const newIndex = historyIndex < commandHistory.length - 1 ? historyIndex + 1 : historyIndex;
-      setHistoryIndex(newIndex);
-      setInput(commandHistory[commandHistory.length - 1 - newIndex] ?? '');
+    // Ctrl+A: 行頭へ
+    if (ch === 'a' && key.ctrl) {
+      setCursorPos(0);
+      return;
+    }
+    // Ctrl+E: 行末へ
+    if (ch === 'e' && key.ctrl) {
+      setCursorPos(input.length);
+      return;
+    }
+    // Ctrl+B または ←: 1文字戻る
+    if ((ch === 'b' && key.ctrl) || key.leftArrow) {
+      setCursorPos(Math.max(0, cursorPos - 1));
+      return;
+    }
+    // Ctrl+F または →: 1文字進む
+    if ((ch === 'f' && key.ctrl) || key.rightArrow) {
+      setCursorPos(Math.min(input.length, cursorPos + 1));
+      return;
+    }
+    // Ctrl+K: カーソルから行末まで削除
+    if (ch === 'k' && key.ctrl) {
+      setInput(input.slice(0, cursorPos));
+      return;
+    }
+    // Ctrl+W: 単語削除（カーソル前の単語を削除）
+    if (ch === 'w' && key.ctrl) {
+      const before = input.slice(0, cursorPos);
+      const after = input.slice(cursorPos);
+      const newBefore = before.replace(/\S*\s*$/, '');
+      setInput(newBefore + after);
+      setCursorPos(newBefore.length);
+      return;
+    }
+    // Ctrl+U: 行全体を削除
+    if (ch === 'u' && key.ctrl) {
+      setInput('');
+      setCursorPos(0);
+      return;
+    }
+    // バックスペース: カーソル位置の前の文字を削除
+    if (key.backspace || key.delete) {
+      if (cursorPos > 0) {
+        const newInput = input.slice(0, cursorPos - 1) + input.slice(cursorPos);
+        setInput(newInput);
+        setCursorPos(cursorPos - 1);
+      }
+      return;
+    }
+    // Enter: 実行
+    if (key.return) {
+      handleSubmit(input);
+      setCursorPos(0);
+      return;
+    }
+    // 通常文字入力: カーソル位置に挿入
+    if (!key.ctrl && !key.meta && ch && !key.upArrow && !key.downArrow && !key.leftArrow && !key.rightArrow) {
+      const newInput = input.slice(0, cursorPos) + ch + input.slice(cursorPos);
+      setInput(newInput);
+      setCursorPos(cursorPos + 1);
+      return;
     }
 
-    if (key.downArrow) {
+    // 履歴を遡る: ↑ または Ctrl+P
+    if ((key.upArrow || (ch === 'p' && key.ctrl)) && commandHistory.length > 0) {
+      const newIndex = historyIndex < commandHistory.length - 1 ? historyIndex + 1 : historyIndex;
+      setHistoryIndex(newIndex);
+      const cmd = commandHistory[commandHistory.length - 1 - newIndex] ?? '';
+      setInput(cmd);
+      setCursorPos(cmd.length); // カーソルを末尾に
+      return;
+    }
+
+    // 履歴を進む: ↓ または Ctrl+N
+    if (key.downArrow || (ch === 'n' && key.ctrl)) {
       if (historyIndex > 0) {
         const newIndex = historyIndex - 1;
         setHistoryIndex(newIndex);
-        setInput(commandHistory[commandHistory.length - 1 - newIndex] ?? '');
+        const cmd = commandHistory[commandHistory.length - 1 - newIndex] ?? '';
+        setInput(cmd);
+        setCursorPos(cmd.length); // カーソルを末尾に
       } else if (historyIndex === 0) {
         setHistoryIndex(-1);
         setInput('');
+        setCursorPos(0);
       }
+      return;
     }
   });
 
@@ -74,6 +152,29 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
   }, []);
 
   const executeCommand = useCallback(async (commandLine: string) => {
+    // ! で始まる場合はシェルコマンドとして実行
+    if (commandLine.startsWith('!')) {
+      const shellCommand = commandLine.slice(1).trim();
+
+      addToHistory({ type: 'command', text: `> ${commandLine}` });
+      setCommandHistory(prev => [...prev, commandLine]);
+      setHistoryIndex(-1);
+
+      if (!shellCommand) {
+        addToHistory({ type: 'message', messageType: 'error', text: 'シェルコマンドを指定してください' });
+        return;
+      }
+      try {
+        const output = execSync(shellCommand, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+        addToHistory({ type: 'shell', output: output.trimEnd() });
+      } catch (error) {
+        const e = error as { stderr?: string; message?: string };
+        const errorMsg = e.stderr || e.message || 'コマンド実行エラー';
+        addToHistory({ type: 'message', messageType: 'error', text: errorMsg });
+      }
+      return;
+    }
+
     const parts = commandLine.trim().split(/\s+/);
     const [command, ...args] = parts;
 
@@ -390,6 +491,9 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
           </Box>
         );
 
+      case 'shell':
+        return <Text key={index}>{item.output}</Text>;
+
       default:
         return null;
     }
@@ -410,13 +514,34 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
 
       {/* プロンプト */}
       <Box>
-        <Text color="green" bold>todo{'>'} </Text>
-        <TextInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          placeholder={isProcessing ? '処理中...' : ''}
-        />
+        {isShellMode ? (
+          // シェルモード: カーソル位置は input 全体での位置なので、shellInput 用に調整
+          (() => {
+            const shellCursorPos = cursorPos - 1; // '!' の分を引く
+            return (
+              <>
+                <Text color="yellow" bold>!{'>'} </Text>
+                <Text>{shellInput.slice(0, shellCursorPos)}</Text>
+                <Text backgroundColor="white" color="black">{shellInput[shellCursorPos] ?? ' '}</Text>
+                <Text>{shellInput.slice(shellCursorPos + 1)}</Text>
+              </>
+            );
+          })()
+        ) : (
+          // 通常モード: カスタムカーソル表示
+          <>
+            <Text color="green" bold>todo{'>'} </Text>
+            {isProcessing ? (
+              <Text color="gray">処理中...</Text>
+            ) : (
+              <>
+                <Text>{input.slice(0, cursorPos)}</Text>
+                <Text backgroundColor="white" color="black">{input[cursorPos] ?? ' '}</Text>
+                <Text>{input.slice(cursorPos + 1)}</Text>
+              </>
+            )}
+          </>
+        )}
       </Box>
     </Box>
   );
