@@ -148,6 +148,55 @@ describe('CLI', () => {
     });
   });
 
+  describe('status', () => {
+    it('Todoがない場合は0件を表示する', () => {
+      const { stdout, exitCode } = runCli('status');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('統計:');
+      expect(stdout).toContain('総数:     0');
+      expect(stdout).toContain('完了:     0');
+      expect(stdout).toContain('未完了:   0');
+      expect(stdout).toContain('完了率:   0%');
+    });
+
+    it('Todoの統計を表示する', () => {
+      runCli('add タスク1');
+      runCli('add タスク2');
+      runCli('add タスク3');
+      const { stdout, exitCode } = runCli('status');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('総数:     3');
+      expect(stdout).toContain('完了:     0');
+      expect(stdout).toContain('未完了:   3');
+      expect(stdout).toContain('完了率:   0%');
+    });
+
+    it('完了率を正しく計算する', { timeout: 10000 }, () => {
+      runCli('add タスク1');
+      runCli('add タスク2');
+      runCli('add タスク3');
+      runCli('add タスク4');
+      runCli('done 1');
+      runCli('done 2');
+      const { stdout, exitCode } = runCli('status');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('総数:     4');
+      expect(stdout).toContain('完了:     2');
+      expect(stdout).toContain('未完了:   2');
+      expect(stdout).toContain('完了率:   50%');
+    });
+
+    it('すべて完了で100%を表示する', () => {
+      runCli('add タスク1');
+      runCli('add タスク2');
+      runCli('done 1');
+      runCli('done 2');
+      const { stdout, exitCode } = runCli('status');
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('完了率:   100%');
+    });
+  });
+
   describe('統合シナリオ', () => {
     it('追加→完了→削除の一連の操作ができる', { timeout: 30000 }, () => {
       // 追加

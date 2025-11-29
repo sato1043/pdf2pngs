@@ -14,6 +14,7 @@ function showUsage(): void {
   node cli.js list           - Todo一覧を表示
   node cli.js done <number>  - Todoを完了にする
   node cli.js delete <number> - Todoを削除する
+  node cli.js status         - 統計を表示
 
 Environment:
   DB_TYPE  - リポジトリタイプ (sqlite|prisma) [default: sqlite]
@@ -97,6 +98,21 @@ async function run(repo: TodoRepository, command: string, args: string[]): Promi
       }
       await repo.delete(todo.id);
       console.log(`削除しました: ${todo.title}`);
+      break;
+    }
+
+    case 'status': {
+      const todos = await repo.findAll();
+      const total = todos.length;
+      const completed = todos.filter((t) => t.completed).length;
+      const pending = total - completed;
+      const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      console.log('統計:');
+      console.log(`  総数:     ${total}`);
+      console.log(`  完了:     ${completed}`);
+      console.log(`  未完了:   ${pending}`);
+      console.log(`  完了率:   ${rate}%`);
       break;
     }
 
