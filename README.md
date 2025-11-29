@@ -9,13 +9,48 @@ TypeScript + Vitest のサンプルプロジェクト
 
 ## 使用例
 
-**Todo機能使用例**
+### REPLモード（対話型）
+
+引数なしで起動すると対話型モードになります：
 
 ```bash
-
 $ npm install
-$ npm run build
+$ npm start
 
+Todo CLI - Type 'help' for commands, 'exit' to quit
+
+todo> add 牛乳を買う
+追加しました: 牛乳を買う
+todo> add メールを送る
+追加しました: メールを送る
+todo> list
+Todo一覧:
+1. [ ] 牛乳を買う (2025/11/29)
+2. [ ] メールを送る (2025/11/29)
+todo> done 1
+完了にしました: 牛乳を買う
+todo> list
+Todo一覧:
+1. [✓] 牛乳を買う (2025/11/29)
+2. [ ] メールを送る (2025/11/29)
+todo> exit
+```
+
+| REPLコマンド  | 説明             |
+|--------------|------------------|
+| `help`       | ヘルプを表示      |
+| `clear`      | 画面をクリア      |
+| `exit`       | 終了             |
+| `quit`       | 終了             |
+| `Ctrl+D`     | 終了             |
+| `↑` / `↓`    | コマンド履歴を参照 |
+
+
+### コマンドラインモード（単発実行）
+
+引数を指定すると単発実行モードになります：
+
+```bash
 $ npm start -- add "牛乳を買う"
 追加しました: 牛乳を買う
 
@@ -125,6 +160,7 @@ $ npm start -- search 仕事
 
 - **TypeScript** - 型安全な JavaScript
 - **React Ink** - CLI向けReactレンダラー
+- **ink-text-input** - REPLモードのテキスト入力
 - **Vitest** - 高速なテストフレームワーク
 - **tsx** - TypeScript 直接実行ツール（esbuild ベース）
 - **ESModule** - ネイティブ ESM（`"type": "module"`）
@@ -142,7 +178,8 @@ $ npm start -- search 仕事
 │   ├── db.ts              # DB層 (node:sqlite)
 │   ├── repository.ts      # リポジトリ層（抽象化）
 │   ├── components/        # React Ink コンポーネント
-│   │   ├── App.tsx        # メインアプリケーション
+│   │   ├── App.tsx        # 単発実行モード
+│   │   ├── REPLApp.tsx    # REPLモード（対話型）
 │   │   ├── TodoList.tsx   # Todo一覧表示
 │   │   ├── Status.tsx     # 統計表示
 │   │   ├── Export.tsx     # マークダウンエクスポート
@@ -389,10 +426,24 @@ search コマンドがタイトルとタグの両方で検索できる
 
 CLIはReact Inkで実装されており、Reactコンポーネントとしてターミナル出力をレンダリングします。
 
+### 動作モード
+
+| モード     | 起動方法                 | コンポーネント     | 説明              |
+|---------|----------------------|-------------|-----------------|
+| REPLモード | `npm start`          | REPLApp.tsx | 対話型。コマンド履歴、継続入力 |
+| 単発実行モード | `npm start -- <cmd>` | App.tsx     | 1コマンド実行後終了      |
+
 ### コンポーネント構成
 
 ```
-App.tsx
+cli.tsx (エントリーポイント)
+├── REPLApp.tsx     # REPLモード（対話型）
+│   ├── TextInput   # コマンド入力（ink-text-input）
+│   └── 共通コンポーネント...
+└── App.tsx         # 単発実行モード
+    └── 共通コンポーネント...
+
+共通コンポーネント:
 ├── TodoList.tsx    # Todo一覧（タグ表示対応）
 ├── Status.tsx      # 統計表示
 ├── Export.tsx      # マークダウン出力
@@ -401,20 +452,16 @@ App.tsx
 └── Usage.tsx       # ヘルプ表示
 ```
 
-### 状態管理
+### REPLモードの状態管理
 
-Appコンポーネントが全コマンドのルーティングと状態管理を担当：
+REPLAppコンポーネントが出力履歴とコマンド履歴を管理：
 
 ```typescript
-type AppState =
-  | { type: 'loading' }
-  | { type: 'usage'; showError?: string }
-  | { type: 'message'; messageType: 'success' | 'error' | 'info'; text: string }
-  | { type: 'todoList'; todos: Todo[]; title?: string }
-  | { type: 'status'; todos: Todo[] }
-  | { type: 'export'; todos: Todo[] }
-  | { type: 'tagList'; tags: Tag[] }
-  | { type: 'searchResults'; todos: TodoWithTags[]; query: string };
+// 出力履歴（画面に表示される内容）
+const [history, setHistory] = useState<OutputItem[]>([]);
+
+// コマンド履歴（↑/↓キーでナビゲーション）
+const [commandHistory, setCommandHistory] = useState<string[]>([]);
 ```
 
 ### メリット
@@ -423,6 +470,7 @@ type AppState =
 - **コンポーネント再利用**: 表示ロジックを再利用可能なコンポーネントに分離
 - **型安全**: TypeScriptとの親和性が高い
 - **テスタビリティ**: コンポーネント単位でのテストが容易
+- **対話型体験**: REPLモードでシームレスな操作が可能
 
 
 __END__
