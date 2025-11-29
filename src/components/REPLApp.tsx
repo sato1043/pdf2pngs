@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { execSync } from 'node:child_process';
 import type { TodoRepository, Todo, TodoWithTags, Tag } from '../repository.js';
@@ -29,11 +29,32 @@ type OutputItem =
 export function REPLApp({ repo, onExit }: REPLAppProps) {
   const { exit } = useApp();
   const [input, setInput] = useState('');
-  const [cursorPos, setCursorPos] = useState(0); // シェルモード用カーソル位置
+  const [cursorPos, setCursorPos] = useState(0); // カーソル位置
   const [history, setHistory] = useState<OutputItem[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [ctrlDPressed, setCtrlDPressed] = useState(false); // Ctrl+D 2回押し検出用
+
+  // Ctrl+D 2回押しのタイムアウト（1秒で解除、メッセージも消去）
+  const ctrlDMessage = '終了するには１秒以内に Ctrl+D を２回押してください';
+  useEffect(() => {
+    if (!ctrlDPressed) return;
+
+    const timer = setTimeout(() => {
+      setCtrlDPressed(false);
+      // タイムアウト時にメッセージを消去
+      setHistory(prev => {
+        const lastItem = prev[prev.length - 1];
+        if (lastItem?.type === 'message' && lastItem.text === ctrlDMessage) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [ctrlDPressed]);
 
   // 入力値からシェルモードを判定
   const isShellMode = input.startsWith('!');
@@ -45,17 +66,32 @@ export function REPLApp({ repo, onExit }: REPLAppProps) {
 
     // Ctrl+C でヒントを表示
     if (ch === 'c' && key.ctrl) {
-      addToHistory({ type: 'message', messageType: 'info', text: '終了するには quit または Ctrl+D を入力してください' });
+      addToHistory({ type: 'message', messageType: 'info', text: '終了するには quit または Ctrl+D を2回入力してください' });
+      setCtrlDPressed(false);
       return;
     }
 
-    // Ctrl+D で終了
+    // Ctrl+D で終了（2回押しで終了）
     if (ch === 'd' && key.ctrl) {
-      await repo.close();
-      onExit();
-      exit();
+      if (ctrlDPressed) {
+        // 2回目: 終了
+        await repo.close();
+        onExit();
+        exit();
+      } else {
+        // 1回目: メッセージを表示してフラグを立てる（すでに表示中でなければ）
+        const lastItem = history[history.length - 1];
+        const alreadyShown = lastItem?.type === 'message' && lastItem.text === ctrlDMessage;
+        if (!alreadyShown) {
+          addToHistory({ type: 'message', messageType: 'info', text: ctrlDMessage });
+        }
+        setCtrlDPressed(true);
+      }
       return;
     }
+
+    // Ctrl+D 以外のキーでフラグをリセット
+    setCtrlDPressed(false);
 
     // Ctrl+A: 行頭へ
     if (ch === 'a' && key.ctrl) {

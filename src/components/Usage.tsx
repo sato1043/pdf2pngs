@@ -23,7 +23,7 @@ export function Usage() {
       <Text bold>REPL commands:</Text>
       <Text>  help                  - このヘルプを表示</Text>
       <Text>  clear                 - 画面をクリア</Text>
-      <Text>  exit / quit / Ctrl+D  - 終了</Text>
+      <Text>  exit / quit / Ctrl+D×2 - 終了</Text>
       <Text>  !{'<shell command>'}      - シェルコマンドを実行</Text>
       <Text />
       <Text bold>キーバインド:</Text>
