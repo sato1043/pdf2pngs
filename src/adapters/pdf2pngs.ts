@@ -1,5 +1,5 @@
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { join, dirname, basename, extname } from 'node:path';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { basename, dirname, extname, join } from 'node:path';
 import { pdfToPng } from 'pdf-to-png-converter';
 
 export interface PdfConversionResult {
@@ -11,7 +11,7 @@ export interface PdfConversionResult {
 }
 
 export interface PdfConversionOptions {
-  scale?: number;  // 解像度スケール（デフォルト: 2.0）
+  scale?: number; // 解像度スケール（デフォルト: 2.0）
 }
 
 /**
@@ -22,7 +22,7 @@ export interface PdfConversionOptions {
  */
 export async function convertPdfToPngs(
   pdfPath: string,
-  options: PdfConversionOptions = {}
+  options: PdfConversionOptions = {},
 ): Promise<PdfConversionResult> {
   const { scale = 2.0 } = options;
 

@@ -9,7 +9,12 @@ export function Message({ type, children }: MessageProps) {
   const prefix = type === 'error' ? 'Error: ' : '';
 
   if (type === 'error') {
-    return <Text color="red">{prefix}{children}</Text>;
+    return (
+      <Text color="red">
+        {prefix}
+        {children}
+      </Text>
+    );
   }
   if (type === 'success') {
     return <Text color="green">{children}</Text>;

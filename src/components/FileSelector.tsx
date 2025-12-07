@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
 import { readdirSync, statSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { Box, Text, useInput } from 'ink';
+import { useCallback, useEffect, useState } from 'react';
 
 interface FileSelectorProps {
   onSelect: (filePath: string) => void;
@@ -14,7 +14,11 @@ interface DirEntry {
   isDirectory: boolean;
 }
 
-export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps) {
+export function FileSelector({
+  onSelect,
+  onCancel,
+  startDir,
+}: FileSelectorProps) {
   const [currentDir, setCurrentDir] = useState(() => startDir || process.cwd());
   const [entries, setEntries] = useState<DirEntry[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -27,8 +31,8 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
       const items = readdirSync(resolvedDir);
 
       const dirEntries: DirEntry[] = items
-        .filter(name => !name.startsWith('.')) // 隠しファイルを除外
-        .map(name => {
+        .filter((name) => !name.startsWith('.')) // 隠しファイルを除外
+        .map((name) => {
           try {
             const fullPath = join(resolvedDir, name);
             const stat = statSync(fullPath);
@@ -54,15 +58,16 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
       setEntries(dirEntries);
       setSelectedIndex(0);
       setError(null);
-    } catch (err) {
+    } catch (_err) {
       setError(`ディレクトリを開けません: ${dir}`);
     }
   }, []);
 
-  // 初期ディレクトリ読み込み
+  // 初期ディレクトリ読み込み（マウント時のみ実行）
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 意図的にマウント時のみ実行
   useEffect(() => {
     loadDirectory(currentDir);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // キー入力処理
   useInput((ch, key) => {
@@ -74,12 +79,12 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
 
     // 上キー または Ctrl+P で前のファイルへ
     if (key.upArrow || (ch === 'p' && key.ctrl)) {
-      setSelectedIndex(prev => Math.max(0, prev - 1));
+      setSelectedIndex((prev) => Math.max(0, prev - 1));
       return;
     }
     // 下キー または Ctrl+N で次のファイルへ
     if (key.downArrow || (ch === 'n' && key.ctrl)) {
-      setSelectedIndex(prev => Math.min(entries.length - 1, prev + 1));
+      setSelectedIndex((prev) => Math.min(entries.length - 1, prev + 1));
       return;
     }
 
@@ -88,9 +93,10 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
       const selected = entries[selectedIndex];
       if (!selected) return;
 
-      const fullPath = selected.name === '..'
-        ? dirname(currentDir)
-        : join(currentDir, selected.name);
+      const fullPath =
+        selected.name === '..'
+          ? dirname(currentDir)
+          : join(currentDir, selected.name);
 
       if (selected.isDirectory) {
         loadDirectory(fullPath);
@@ -107,9 +113,16 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
   const visibleEntries = entries.slice(startIdx, startIdx + maxVisible);
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="cyan"
+      paddingX={1}
+    >
       <Box marginBottom={1}>
-        <Text bold color="cyan">ファイルを選択 </Text>
+        <Text bold color="cyan">
+          ファイルを選択{' '}
+        </Text>
         <Text color="gray">(↑↓: 移動, Enter: 選択, Esc: キャンセル)</Text>
       </Box>
 
@@ -123,7 +136,7 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
         <Text color="gray">(空のディレクトリ)</Text>
       ) : (
         <Box flexDirection="column">
-          {startIdx > 0 && <Text color="gray">  ↑ ({startIdx}件)</Text>}
+          {startIdx > 0 && <Text color="gray"> ↑ ({startIdx}件)</Text>}
 
           {visibleEntries.map((entry, idx) => {
             const actualIdx = startIdx + idx;
@@ -134,11 +147,17 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
               <Box key={entry.name}>
                 {isSelected ? (
                   <Text color="cyan">
-                    {'▸ '}{icon}{entry.name}{entry.isDirectory && '/'}
+                    {'▸ '}
+                    {icon}
+                    {entry.name}
+                    {entry.isDirectory && '/'}
                   </Text>
                 ) : (
                   <Text>
-                    {'  '}{icon}{entry.name}{entry.isDirectory && '/'}
+                    {'  '}
+                    {icon}
+                    {entry.name}
+                    {entry.isDirectory && '/'}
                   </Text>
                 )}
               </Box>
@@ -146,7 +165,10 @@ export function FileSelector({ onSelect, onCancel, startDir }: FileSelectorProps
           })}
 
           {startIdx + maxVisible < entries.length && (
-            <Text color="gray">  ↓ ({entries.length - startIdx - maxVisible}件)</Text>
+            <Text color="gray">
+              {' '}
+              ↓ ({entries.length - startIdx - maxVisible}件)
+            </Text>
           )}
         </Box>
       )}

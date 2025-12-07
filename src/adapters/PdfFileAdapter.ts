@@ -38,7 +38,8 @@ export class PdfFileAdapter implements FileAdapter {
   async process(filePath: string): Promise<FileProcessResult> {
     try {
       // undefinedの場合はオプションを渡さない
-      const options = this.options.scale !== undefined ? { scale: this.options.scale } : {};
+      const options =
+        this.options.scale !== undefined ? { scale: this.options.scale } : {};
       const result = await convertPdfToPngs(filePath, options);
 
       if (result.success) {

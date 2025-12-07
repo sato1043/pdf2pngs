@@ -19,9 +19,13 @@
     "test": "node --no-warnings node_modules/.bin/vitest",
     "test:run": "node --no-warnings node_modules/.bin/vitest run",
     "clean": "rm -rf dist",
-    "build": "npm run clean && npm run typecheck && tsc -p tsconfig.prod.json"
+    "build": "npm run clean && npm run typecheck && tsc -p tsconfig.prod.json",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "tsx": "^4.20.6",

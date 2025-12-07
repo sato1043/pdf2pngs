@@ -29,7 +29,7 @@ export class AdapterRegistry {
    * @returns 対応するアダプター、見つからない場合は undefined
    */
   findAdapter(filePath: string): FileAdapter | undefined {
-    return this.adapters.find(adapter => adapter.canHandle(filePath));
+    return this.adapters.find((adapter) => adapter.canHandle(filePath));
   }
 
   /**
@@ -38,7 +38,7 @@ export class AdapterRegistry {
    * @returns 対応するアダプターが存在する場合 true
    */
   hasAdapter(filePath: string): boolean {
-    return this.adapters.some(adapter => adapter.canHandle(filePath));
+    return this.adapters.some((adapter) => adapter.canHandle(filePath));
   }
 
   /**
@@ -52,6 +52,6 @@ export class AdapterRegistry {
    * 登録されているアダプター名の一覧を取得する
    */
   getAdapterNames(): string[] {
-    return this.adapters.map(adapter => adapter.name);
+    return this.adapters.map((adapter) => adapter.name);
   }
 }

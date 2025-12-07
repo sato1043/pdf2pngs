@@ -1,6 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FileAdapter, FileProcessResult } from '../adapters/FileAdapter.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdapterRegistry } from '../adapters/AdapterRegistry.js';
+import type {
+  FileAdapter,
+  FileProcessResult,
+} from '../adapters/FileAdapter.js';
 import { PdfFileAdapter } from '../adapters/PdfFileAdapter.js';
 
 // pdf2pngs モジュールをモック
@@ -9,6 +12,7 @@ vi.mock('../adapters/pdf2pngs.js', () => ({
 }));
 
 import { convertPdfToPngs } from '../adapters/pdf2pngs.js';
+
 const mockConvertPdfToPngs = vi.mocked(convertPdfToPngs);
 
 // テスト用のダミーアダプター
@@ -247,7 +251,7 @@ describe('PdfFileAdapter', () => {
 
       expect(mockConvertPdfToPngs).toHaveBeenCalledWith(
         '/path/to/document.pdf',
-        { scale: 3.0 }
+        { scale: 3.0 },
       );
     });
 
@@ -263,7 +267,7 @@ describe('PdfFileAdapter', () => {
 
       expect(mockConvertPdfToPngs).toHaveBeenCalledWith(
         '/path/to/document.pdf',
-        {}
+        {},
       );
     });
   });

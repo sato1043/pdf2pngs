@@ -1,8 +1,8 @@
-import { render } from 'ink';
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { FileSelectorApp } from './components/FileSelectorApp.js';
+import { render } from 'ink';
 import { AdapterRegistry, PdfFileAdapter } from './adapters/index.js';
+import { FileSelectorApp } from './components/FileSelectorApp.js';
 
 /**
  * 引数で指定されたファイルを直接変換する
@@ -50,7 +50,9 @@ async function convertFile(filePath: string): Promise<void> {
       process.exit(1);
     }
   } catch (error) {
-    console.error(`エラー: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `エラー: ${error instanceof Error ? error.message : String(error)}`,
+    );
     process.exit(1);
   }
 }
@@ -62,7 +64,7 @@ async function showFileSelector(): Promise<void> {
   return new Promise((resolve) => {
     const { waitUntilExit } = render(
       <FileSelectorApp onExit={() => resolve()} />,
-      { exitOnCtrlC: true }
+      { exitOnCtrlC: true },
     );
 
     waitUntilExit().then(resolve);
